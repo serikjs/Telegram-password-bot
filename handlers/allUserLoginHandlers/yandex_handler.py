@@ -7,7 +7,7 @@ import requests
 from states import YandexDiskStates, AuthStates
 from bot import dp,db_manager,message_store
 from keyboards import main_keyboard
-from utils.password_util import encrypt_password, decrypt_password
+from utils.password_util import encrypt_password, decrypt_password,decode_salt
 
 async def upload_to_yandex_disk(message: types.Message, token, state: FSMContext, tokenInBase: Boolean = False):
     user_id = str(message.from_user.id)
@@ -26,7 +26,7 @@ async def upload_to_yandex_disk(message: types.Message, token, state: FSMContext
     if not tokenInBase :
         user_data = db_manager.load_user_data(user_id)
         master_password = user_data["master_password"]
-        salt = base64.b64decode(user_data["salt"])
+        salt = decode_salt(user_data["salt"])
 
         encrypted_token= encrypt_password(token, master_password, salt)
         user_data["yandex_token"] = encrypted_token  # Сохраняем токен
@@ -104,7 +104,7 @@ async def request_yandex_token(message: types.Message,state: FSMContext):
         token = user_data["yandex_token"]  # Используем токен, который уже есть
 
         master_password = user_data["master_password"]
-        salt = base64.b64decode(user_data["salt"])
+        salt = decode_salt(user_data["salt"])
 
         decrypted_token = decrypt_password(token, master_password, salt)
         await upload_to_yandex_disk(message, decrypted_token,state,True)

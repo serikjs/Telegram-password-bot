@@ -4,7 +4,7 @@ import base64
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from states import AuthStates,GetPasswordStates
-from utils.password_util import decrypt_password
+from utils.password_util import decrypt_password,decode_salt
 from utils.helpers import delete_message_after_delay
 from keyboards import main_keyboard
 
@@ -24,7 +24,7 @@ async def handle_password_name(message: types.Message, state: FSMContext):
     user_id = str(message.from_user.id)
     user_data = db_manager.load_user_data(user_id)
     master_password = user_data["master_password"]
-    salt = base64.b64decode(user_data["salt"])
+    salt = decode_salt(user_data["salt"])
 
     if name not in user_data["passwords"]:
         msg1 = await message.answer("Такого пароля нет.",reply_markup=main_keyboard)

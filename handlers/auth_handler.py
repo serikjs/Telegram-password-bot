@@ -4,7 +4,7 @@ import os
 import base64
 from aiogram.dispatcher import FSMContext
 from states import AuthStates, InactivityTimerStore
-from utils.password_util import hash_password, verify_password
+from utils.password_util import hash_password, verify_password, generate_salt, encode_salt
 from keyboards import clear_keyboard, main_keyboard, auth_keyboard
 
 @dp.message_handler(commands=["start"])
@@ -53,13 +53,11 @@ async def handle_master_password(message: types.Message, state: FSMContext):
             msg2 = await message.answer("Неверный мастер-пароль. Попробуйте снова.")
             await message_store.add_message(state,msg2)
     else:
-        salt = os.urandom(16)
-        
         # Регистрация нового пользователя
         user_data = {
             "user_id": user_id,
             "master_password": hash_password(master_password),
-            "salt": base64.b64encode(salt).decode(),
+            "salt": encode_salt(generate_salt()),
             "passwords": {},
         }
         db_manager.save_user_data(user_id, user_data)
