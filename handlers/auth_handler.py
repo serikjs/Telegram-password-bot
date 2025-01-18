@@ -1,10 +1,9 @@
-from cgitb import text
-from bot import dp,db_manager,message_store
+from bot import dp,db_manager,message_store, main_config
 from aiogram import types
 import os
 import base64
 from aiogram.dispatcher import FSMContext
-from states import AuthStates
+from states import AuthStates, InactivityTimerStore
 from utils.password_util import hash_password, verify_password
 from keyboards import clear_keyboard, main_keyboard, auth_keyboard
 
@@ -23,6 +22,8 @@ async def send_welcome(message: types.Message, state: FSMContext):
         "Добро пожаловать! Введите мастер-пароль для авторизации или регистрации.",
         reply_markup=clear_keyboard
     )
+    await InactivityTimerStore.start_inactivity_timer(state, message, main_config.TIME_TO_LOGOUT)
+    await state.update_data(logout_callback=logoutTimeout)
     await message_store.add_message(state,msg)
     await AuthStates.waiting_for_master_password.set()
 
@@ -72,6 +73,12 @@ async def handle_master_password(message: types.Message, state: FSMContext):
 @dp.message_handler(state=AuthStates.logged_in, text="Выйти")
 async def logout(message: types.Message, state: FSMContext):
     await message.delete()
+    await message_store.clear_messages(state)
+    await state.finish()
+    await message.answer("Вы вышли из аккаунта.",reply_markup=auth_keyboard)
+
+
+async def logoutTimeout(message: types.Message, state: FSMContext):
     await message_store.clear_messages(state)
     await state.finish()
     await message.answer("Вы вышли из аккаунта.",reply_markup=auth_keyboard)

@@ -3,15 +3,14 @@ import asyncio
 import base64
 from aiogram import types
 from aiogram.dispatcher import FSMContext
-from states import AuthStates, GetPasswordStates
+from states import AuthStates,GetPasswordStates
 from utils.password_util import decrypt_password
 from utils.helpers import delete_message_after_delay
 from keyboards import main_keyboard
 
-@dp.message_handler(state=AuthStates.logged_in, text="Получить пароль")
 async def get_password(message: types.Message,state: FSMContext):
-    await message_store.add_message(state,message)
     await message_store.clear_messages(state)
+    await message_store.add_message(state,message)
     msg = await message.answer(
         "Введите имя сервиса.",
     )
@@ -36,8 +35,8 @@ async def handle_password_name(message: types.Message, state: FSMContext):
         m1 = await message.answer(f"Пароль для {name}:",reply_markup=main_keyboard)
         m2 = await message.answer(f"{decrypted_password}")
         await message_store.add_message(state,m1)
-        # asyncio.create_task(delete_message_after_delay(m1, 10))
+        await message_store.add_message(state,m2)
         asyncio.create_task(delete_message_after_delay(m2, 10))
 
-    await state.finish()
+    await state.reset_state(with_data=False)
     await AuthStates.logged_in.set()

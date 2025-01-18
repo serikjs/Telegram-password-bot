@@ -53,7 +53,7 @@ async def upload_to_yandex_disk(message: types.Message, token, state: FSMContext
             f"Не удалось создать директорию на Яндекс.Диске. Ответ: {create_dir_response.text}",reply_markup=main_keyboard
         )
         await message_store.add_message(state,msg3)
-        await state.finish()
+        await state.reset_state(with_data=False)
         await AuthStates.logged_in.set()
         return
 
@@ -71,7 +71,7 @@ async def upload_to_yandex_disk(message: types.Message, token, state: FSMContext
             "Не удалось получить ссылку для загрузки. Проверьте токен и повторите попытку.",reply_markup=main_keyboard
         )
         await message_store.add_message(state,msg4)
-        await state.finish()
+        await state.reset_state(with_data=False)
         await AuthStates.logged_in.set()
         return
 
@@ -93,7 +93,6 @@ async def upload_to_yandex_disk(message: types.Message, token, state: FSMContext
         await message_store.add_message(state,msg7)
 
 # Получение токена и загрузка файла на Яндекс.Диск
-@dp.message_handler(state=AuthStates.logged_in, text="Синхронизировать с Яндекс.Диск")
 async def request_yandex_token(message: types.Message,state: FSMContext):
     await message_store.clear_messages(state)
     await message_store.add_message(state,message)
@@ -125,5 +124,5 @@ async def handle_token(message: types.Message, state: FSMContext):
     await message_store.add_message(state,message)
     token = message.text.strip()
     await upload_to_yandex_disk(message, token, state)
-    await state.finish()
+    await state.reset_state(with_data=False)
     await AuthStates.logged_in.set()

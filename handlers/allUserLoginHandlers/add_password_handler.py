@@ -8,7 +8,6 @@ from utils.password_util import encrypt_password, generate_password
 from keyboards import main_keyboard,add_password_keyboard
 
 
-@dp.message_handler(state=AuthStates.logged_in, text="Добавить пароль")
 async def add_password(message: types.Message, state: FSMContext):
     await message_store.clear_messages(state)
     await message_store.add_message(state, message)
@@ -27,7 +26,7 @@ async def process_name(message: types.Message, state: FSMContext):
     if name in user_data["passwords"]:
         msg1 = await message.answer("Пароль с таким именем уже существует.",reply_markup=main_keyboard)
         await message_store.add_message(state,msg1)
-        await state.finish()
+        await state.reset_state(with_data=False)
         await AuthStates.logged_in.set()
         return
     else:
@@ -60,7 +59,7 @@ async def handle_generate_password(callback_query: types.CallbackQuery, state: F
 
     msg1 = await bot.send_message(callback_query.from_user.id, f"Пароль для {name} сгенерирован и сохранен.", reply_markup=main_keyboard)
     await message_store.add_message(state,msg1)
-    await state.finish()
+    await state.reset_state(with_data=False)
     await AuthStates.logged_in.set()
     await bot.answer_callback_query(callback_query.id)  # Уведомление Telegram, что запрос обработан
 
@@ -83,5 +82,5 @@ async def process_password(message: types.Message, state: FSMContext):
     msg2 = await message.answer(f"Пароль для {name} сохранен.",reply_markup=main_keyboard)
     await message_store.add_message(state,msg2)
 
-    await state.finish()
+    await state.reset_state(with_data=False)
     await AuthStates.logged_in.set()

@@ -7,7 +7,8 @@ from database.database import DatabaseManager
 from states import MessagesStore
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot(token=config.TOKEN)
+main_config = config
+bot = Bot(token=main_config.TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 

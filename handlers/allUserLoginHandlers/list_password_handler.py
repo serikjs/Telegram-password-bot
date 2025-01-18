@@ -1,10 +1,8 @@
-from bot import dp,db_manager,message_store
+from bot import db_manager,message_store
 from aiogram import types
-from states import AuthStates
 from aiogram.dispatcher import FSMContext
 from keyboards import main_keyboard
 
-@dp.message_handler(state=AuthStates.logged_in, text="Список паролей")
 async def list_passwords(message: types.Message, state: FSMContext):
     await message_store.clear_messages(state)
     await message_store.add_message(state,message)
