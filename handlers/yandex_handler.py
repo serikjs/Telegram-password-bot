@@ -13,13 +13,13 @@ async def upload_to_yandex_disk(message: types.Message, token, state: FSMContext
     user_id = str(message.from_user.id)
 
     msg1 = await message.answer("Идёт загрузка файла на Яндекс.Диск...")
-    message_store.add_message(msg1)
+    await message_store.add_message(state,msg1)
 
     # Проверяем наличие файла database.py
     file_path = f"database/db/{user_id}.json"
     if not os.path.exists(file_path):
         msg2 = await message.answer("Файл не найден.",reply_markup=main_keyboard)
-        message_store.add_message(msg2)
+        await message_store.add_message(state,msg2)
         return
 
     # Сохраняем токен в базе данных для пользователя
@@ -52,7 +52,7 @@ async def upload_to_yandex_disk(message: types.Message, token, state: FSMContext
         msg3 = await message.answer(
             f"Не удалось создать директорию на Яндекс.Диске. Ответ: {create_dir_response.text}",reply_markup=main_keyboard
         )
-        message_store.add_message(msg3)
+        await message_store.add_message(state,msg3)
         await state.finish()
         await AuthStates.logged_in.set()
         return
@@ -70,7 +70,7 @@ async def upload_to_yandex_disk(message: types.Message, token, state: FSMContext
         msg4 = await message.answer(
             "Не удалось получить ссылку для загрузки. Проверьте токен и повторите попытку.",reply_markup=main_keyboard
         )
-        message_store.add_message(msg4)
+        await message_store.add_message(state,msg4)
         await state.finish()
         await AuthStates.logged_in.set()
         return
@@ -78,7 +78,7 @@ async def upload_to_yandex_disk(message: types.Message, token, state: FSMContext
     href = response.json().get("href")
     if not href:
         msg5 = await message.answer("Не удалось получить ссылку для загрузки.",reply_markup=main_keyboard)
-        message_store.add_message(msg5)
+        await message_store.add_message(state,msg5)
         return
 
     # Загружаем файл в личную папку пользователя
@@ -87,16 +87,16 @@ async def upload_to_yandex_disk(message: types.Message, token, state: FSMContext
 
     if upload_response.status_code == 201:
         msg6 = await message.answer(f"Файл успешно загружен на Яндекс.Диск в папку /user_{user_id}!",reply_markup=main_keyboard)
-        message_store.add_message(msg6)
+        await message_store.add_message(state,msg6)
     else:
         msg7 = await message.answer("Ошибка загрузки файла на Яндекс.Диск.",reply_markup=main_keyboard)
-        message_store.add_message(msg7)
+        await message_store.add_message(state,msg7)
 
 # Получение токена и загрузка файла на Яндекс.Диск
 @dp.message_handler(state=AuthStates.logged_in, text="Синхронизировать с Яндекс.Диск")
 async def request_yandex_token(message: types.Message,state: FSMContext):
-    message_store.clear_messages()
-    message_store.add_message(message)
+    await message_store.clear_messages(state)
+    await message_store.add_message(state,message)
     # Запрос на OAuth авторизацию для получения токена
     user_id = str(message.from_user.id)
     user_data = db_manager.load_user_data(user_id)
@@ -116,13 +116,13 @@ async def request_yandex_token(message: types.Message,state: FSMContext):
         f"Для загрузки файла на Яндекс.Диск перейдите по следующей ссылке и авторизуйтесь:\n{oauth_url}\n\n"
         "После авторизации скопируйте токен и отправьте его сюда."
     )
-    message_store.add_message(msg)
+    await message_store.add_message(state,msg)
     await YandexDiskStates.waiting_for_token.set()
 
 # Получение токена и загрузка файла на Яндекс.Диск
 @dp.message_handler(state=YandexDiskStates.waiting_for_token)
 async def handle_token(message: types.Message, state: FSMContext):
-    message_store.add_message(message)
+    await message_store.add_message(state,message)
     token = message.text.strip()
     await upload_to_yandex_disk(message, token, state)
     await state.finish()

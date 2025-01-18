@@ -9,21 +9,21 @@ from utils.password_util import hash_password, verify_password
 from keyboards import clear_keyboard, main_keyboard, auth_keyboard
 
 @dp.message_handler(commands=["start"])
-async def start(message: types.Message):
-    await send_welcome(message)
+async def start(message: types.Message, state: FSMContext):
+    await send_welcome(message,state)
 
 @dp.message_handler(text="Войти")
-async def start(message: types.Message):
-    await send_welcome(message)
+async def start(message: types.Message, state: FSMContext):
+    await send_welcome(message,state)
 
 
-async def send_welcome(message: types.Message):
+async def send_welcome(message: types.Message, state: FSMContext):
     await message.delete()
     msg = await message.answer(
         "Добро пожаловать! Введите мастер-пароль для авторизации или регистрации.",
         reply_markup=clear_keyboard
     )
-    message_store.add_message(msg)
+    await message_store.add_message(state,msg)
     await AuthStates.waiting_for_master_password.set()
 
 @dp.message_handler(state=AuthStates.waiting_for_master_password)
@@ -47,10 +47,10 @@ async def handle_master_password(message: types.Message, state: FSMContext):
                 "Авторизация успешна! Вы вошли в аккаунт.", 
                 reply_markup=main_keyboard
             )
-            message_store.add_message(msg1)
+            await message_store.add_message(state,msg1)
         else:
             msg2 = await message.answer("Неверный мастер-пароль. Попробуйте снова.")
-            message_store.add_message(msg2)
+            await message_store.add_message(state,msg2)
     else:
         salt = os.urandom(16)
         
@@ -67,11 +67,11 @@ async def handle_master_password(message: types.Message, state: FSMContext):
             "Регистрация завершена! Вы авторизованы.", 
             reply_markup=main_keyboard
         )
-        message_store.add_message(msg3)
+        await message_store.add_message(state,msg3)
 
 @dp.message_handler(state=AuthStates.logged_in, text="Выйти")
 async def logout(message: types.Message, state: FSMContext):
     await message.delete()
-    message_store.clear_messages()
+    await message_store.clear_messages(state)
     await state.finish()
     await message.answer("Вы вышли из аккаунта.",reply_markup=auth_keyboard)
