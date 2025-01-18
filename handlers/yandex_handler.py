@@ -2,12 +2,14 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 import os
 import base64
+from aiogram.types.base import Boolean
 import requests
 from states import YandexDiskStates, AuthStates
 from bot import dp,db_manager,message_store
 from keyboards import main_keyboard
+from utils.password_util import encrypt_password, decrypt_password
 
-async def upload_to_yandex_disk(message: types.Message, token, state: FSMContext):
+async def upload_to_yandex_disk(message: types.Message, token, state: FSMContext, tokenInBase: Boolean = False):
     user_id = str(message.from_user.id)
 
     msg1 = await message.answer("Идёт загрузка файла на Яндекс.Диск...")
@@ -21,9 +23,15 @@ async def upload_to_yandex_disk(message: types.Message, token, state: FSMContext
         return
 
     # Сохраняем токен в базе данных для пользователя
-    user_data = db_manager.load_user_data(user_id)
-    user_data["yandex_token"] = token  # Сохраняем токен
-    db_manager.save_user_data(user_id, user_data)
+    if not tokenInBase :
+        user_data = db_manager.load_user_data(user_id)
+        master_password = user_data["master_password"]
+        salt = base64.b64decode(user_data["salt"])
+
+        encrypted_token= encrypt_password(token, master_password, salt)
+        user_data["yandex_token"] = encrypted_token  # Сохраняем токен
+        db_manager.save_user_data(user_id, user_data)
+
 
      # Создаем уникальную директорию для каждого пользователя на Яндекс.Диске
     user_disk_directory = f"/help_password_bot"
@@ -96,7 +104,11 @@ async def request_yandex_token(message: types.Message,state: FSMContext):
     if "yandex_token" in user_data and user_data["yandex_token"]:
         token = user_data["yandex_token"]  # Используем токен, который уже есть
 
-        await upload_to_yandex_disk(message, token,state)
+        master_password = user_data["master_password"]
+        salt = base64.b64decode(user_data["salt"])
+
+        decrypted_token = decrypt_password(token, master_password, salt)
+        await upload_to_yandex_disk(message, decrypted_token,state,True)
         return
 
     oauth_url = "https://oauth.yandex.ru/authorize?response_type=token&client_id=b4cfd561b1a2478dab705cccdd22c718"

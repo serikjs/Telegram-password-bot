@@ -11,7 +11,7 @@ async def list_passwords(message: types.Message):
     user_data = db_manager.load_user_data(user_id)
 
     if not user_data["passwords"]:
-        msg1 = await message.answer("Сохраненных паролей нет.")
+        msg1 = await message.answer("Сохраненных паролей нет.",reply_markup=main_keyboard)
         message_store.add_message(msg1)
         return
 

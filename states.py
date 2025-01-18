@@ -29,9 +29,6 @@ class MessagesStore(StatesGroup):
     
     def clear_messages(self):
         list = self.messages
-
-        print(list)
-
         for msg in list:   
             asyncio.create_task(delete_message_after_delay(msg, 0))
 
